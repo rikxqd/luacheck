@@ -3,9 +3,9 @@ List of warnings
 
 Warnings produced by Luacheck are categorized using three-digit warning codes. Warning codes can be displayed in CLI output using ``--codes`` CLI option or ``codes`` config option. Errors also have codes starting with zero.
 
-==== ==============================================
+==== =================================================================
 Code Description
-==== ==============================================
+==== =================================================================
 011  A syntax error.
 021  An invalid inline option.
 022  An unpaired inline push directive.
@@ -14,8 +14,10 @@ Code Description
 112  Mutating an undefined global variable.
 113  Accessing an undefined global variable.
 121  Setting a read-only global variable.
-122  Mutating a read-only global variable.
+122  Setting a read-only field of a global variable.
 131  Unused implicitly defined global variable.
+142  Setting an undefined field of a global variable.
+143  Accessing an undefined field of a global variable.
 211  Unused local variable.
 212  Unused argument.
 213  Unused loop variable.
@@ -23,11 +25,14 @@ Code Description
 231  Local variable is set but never accessed.
 232  An argument is set but never accessed.
 233  Loop variable is set but never accessed.
+241  Local variable is mutated but never accessed.
 311  Value assigned to a local variable is unused.
 312  Value of an argument is unused.
 313  Value of a loop variable is unused.
 314  Value of a field in a table literal is unused.
 321  Accessing uninitialized local variable.
+331  Value assigned to a local variable is mutated but never accessed.
+341  Mutating uninitialized local variable.
 411  Redefining a local variable.
 412  Redefining an argument.
 413  Redefining a loop variable.
@@ -45,17 +50,34 @@ Code Description
 541  An empty ``do`` ``end`` block.
 542  An empty ``if`` branch.
 551  An empty statement.
-==== ==============================================
+611  A line consists of nothing but whitespace.
+612  A line contains trailing whitespace.
+613  Trailing whitespace in a string.
+614  Trailing whitespace in a comment.
+621  Inconsistent indentation (``SPACE`` followed by ``TAB``).
+631  Line is too long.
+==== =================================================================
 
 Global variables
 ----------------
 
-For each file, Luacheck builds list of defined globals which can be used there. By default only globals from Lua standard library are defined; custom globals can be added using ``--globals`` CLI option or ``globals`` config option, and version of standard library can be selected using ``--std`` CLI option or ``std`` config option. When an undefined global is set, mutated or accessed, Luacheck produces a warning.
+For each file, Luacheck builds list of defined globals and fields which can be used there. By default only globals from Lua standard library are defined; custom globals can be added using ``--globals`` CLI option or ``globals`` config option, and version of standard library can be selected using ``--std`` CLI option or ``std`` config option. When an undefined global or field is set, mutated or accessed, Luacheck produces a warning.
 
 Read-only globals
 ^^^^^^^^^^^^^^^^^
 
-By default, all standard globals except ``_G`` and ``package`` are marked as read-only, so that setting or mutating them produces a warning. Custom read-only globals can be added using ``--read-globals`` CLI option or ``read_globals`` config option.
+By default, most standard globals and fields are marked as read-only, so that setting them produces a warning. Custom read-only globals and fields can be added using ``--read-globals`` CLI option or ``read_globals`` config option, or using a custom set of globals. See :ref:`custom_stds`
+
+Globals and fields that are not read-only by default:
+
+* ``_G``
+* ``_ENV`` (treated as a global by Luacheck)
+* ``package.path``
+* ``package.cpath``
+* ``package.loaded``
+* ``package.preload``
+* ``package.loaders``
+* ``package.searchers``
 
 .. _implicitlydefinedglobals:
 
@@ -143,3 +165,8 @@ The following control flow and data flow issues are detected:
 * Unbalanced assignments;
 * Empty blocks.
 * Empty statements (semicolons without preceding statements).
+
+Formatting issues
+-----------------
+
+Luacheck detects some common formatting issues, such as trailing whitespace and lines that are too long.

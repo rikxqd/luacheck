@@ -1,4 +1,26 @@
-local filter = require "luacheck.filter".filter
+local filter_full = require "luacheck.filter".filter
+
+local function filter(issue_arrays, opts)
+   local report = {}
+
+   for i, issues in ipairs(issue_arrays) do
+      for issue_index, issue in ipairs(issues) do
+         issue.line = issue_index
+      end
+
+      report[i] = {events = issues, per_line_options = {}, line_lengths = {}}
+   end
+
+   local result = filter_full(report, opts)
+
+   for _, file_report in ipairs(result) do
+      for _, issue in ipairs(file_report) do
+         issue.line = nil
+      end
+   end
+
+   return result
+end
 
 describe("filter", function()
    it("filters warnings by name", function()
@@ -82,7 +104,8 @@ describe("filter", function()
             },
             {
                code = "111",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             },
             {
                code = "413",
@@ -102,7 +125,8 @@ describe("filter", function()
             },
             {
                code = "111",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             },
             {
                code = "413",
@@ -117,7 +141,8 @@ describe("filter", function()
             },
             {
                code = "111",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             },
             {
                code = "321",
@@ -267,18 +292,21 @@ describe("filter", function()
          {
             {
                code = "111",
-               name = "module"
+               name = "module",
+               indexing = {"module"}
             }
          }
       }, filter({
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             },
             {
                code = "111",
-               name = "module"
+               name = "module",
+               indexing = {"module"}
             }
          }
       }, {
@@ -292,18 +320,21 @@ describe("filter", function()
          {
             {
                code = "111",
-               name = "module"
+               name = "module",
+               indexing = {"module"}
             }
          }
       }, filter({
          {
             {
                code = "113",
-               name = "package"
+               name = "package",
+               indexing = {"package"}
             },
             {
                code = "111",
-               name = "module"
+               name = "module",
+               indexing = {"module"}
             }
          }
       }, {
@@ -316,11 +347,13 @@ describe("filter", function()
          {
             {
                code = "131",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             },
             {
                code = "113",
-               name = "baz"
+               name = "baz",
+               indexing = {"baz"}
             }
          }
       }, filter({
@@ -335,11 +368,13 @@ describe("filter", function()
             },
             {
                code = "111",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             },
             {
                code = "113",
-               name = "baz"
+               name = "baz",
+               indexing = {"baz"}
             }
          }
       }, {
@@ -352,31 +387,37 @@ describe("filter", function()
          {
             {
                code = "111",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             },
             {
                code = "113",
-               name = "baz"
+               name = "baz",
+               indexing = {"baz"}
             }
          }
       }, filter({
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             },
             {
                code = "111",
                name = "foo",
+               indexing = {"foo"},
                top = true
             },
             {
                code = "111",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             },
             {
                code = "113",
-               name = "baz"
+               name = "baz",
+               indexing = {"baz"}
             }
          }
       }, {
@@ -390,24 +431,28 @@ describe("filter", function()
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             }
          }
       }, filter({
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             },
             {
                code = "111",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             }
          },
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             }
          }
       }, {
@@ -423,11 +468,13 @@ describe("filter", function()
             {
                code = "111",
                name = "string",
+               indexing = {"string"},
                module = true
             },
             {
                code = "111",
                name = "bar",
+               indexing = {"bar"},
                module = true
             }
          }
@@ -435,26 +482,31 @@ describe("filter", function()
          {
             {
                code = "111",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             }
          },
          {
             {
                code = "111",
                name = "foo",
+               indexing = {"foo"},
                top = true
             },
             {
                code = "111",
                name = "foo",
+               indexing = {"foo"}
             },
             {
                code = "111",
-               name = "string"
+               name = "string",
+               indexing = {"string"}
             },
             {
                code = "111",
-               name = "bar"
+               name = "bar",
+               indexing = {"bar"}
             }
          }
       }, {
@@ -477,17 +529,20 @@ describe("filter", function()
          {
             {
                code = "111",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             }
          },
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             },
             {
                code = "111",
                name = "bar",
+               indexing = {"bar"}
             }
          }
       }, {
@@ -499,5 +554,101 @@ describe("filter", function()
                module = true
             }
       }))
+   end)
+
+   it("applies inline option events and per-line options", function()
+      assert.same({
+         {
+            {code = "111", name = "not_print", indexing = {"not_print"}, line = 1, column = 1},
+            {code = "111", name = "print", indexing = {"print"}, line = 5, column = 1},
+            {code = "121", name = "print", indexing = {"print"}, line = 7, column = 1},
+            {code = "021", line = 8, column = 1},
+            {code = "021", line = 1000, column = 20}
+         }
+      }, filter_full({
+         {
+            events = {
+               {code = "111", name = "not_print", indexing = {"not_print"}, line = 1, column = 1},
+               {push = true, line = 2, column = 1},
+               {options = {std = "none"}, line = 3, column = 1},
+               {code = "111", name = "not_print", indexing = {"not_print"}, line = 4, column = 1},
+               {code = "111", name = "print", indexing = {"print"}, line = 5, column = 1},
+               {pop = true, line = 6, column = 1},
+               {code = "111", name = "print", indexing = {"print"}, line = 7, column = 1},
+               {options = {std = "bad_std"}, line = 8, column = 1}
+            },
+            per_line_options = {
+               [4] = {
+                  {options = {ignore = {",*"}}, line = 4, column = 10}
+               },
+               [1000] = {
+                  {options = {std = "max"}, line = 1000, column = 1},
+                  {options = {std = "another_bad_std"}, line = 1000, column = 20}
+               }
+            },
+            line_lengths = {}
+         }
+      }, {
+            {
+               std = "max"
+            }
+      }))
+   end)
+
+   it("ignores inline options completely with inline = false", function()
+      assert.same({
+         {
+            {code = "111", name = "not_print", indexing = {"not_print"}, line = 1, column = 1},
+            {code = "111", name = "not_print", indexing = {"not_print"}, line = 4, column = 1},
+            {code = "121", name = "print", indexing = {"print"}, line = 5, column = 1},
+            {code = "121", name = "print", indexing = {"print"}, line = 7, column = 1}
+         }
+      }, filter_full({
+         {
+            events = {
+               {code = "111", name = "not_print", indexing = {"not_print"}, line = 1, column = 1},
+               {push = true, line = 2, column = 1},
+               {options = {std = "none"}, line = 3, column = 1},
+               {code = "111", name = "not_print", indexing = {"not_print"}, line = 4, column = 1},
+               {code = "111", name = "print", indexing = {"print"}, line = 5, column = 1},
+               {pop = true, line = 6, column = 1},
+               {code = "111", name = "print", indexing = {"print"}, line = 7, column = 1},
+               {options = {std = "bad_std"}, line = 8, column = 1}
+            },
+            per_line_options = {
+               [4] = {
+                  {options = {ignore = {",*"}}, line = 4, column = 10}
+               },
+               [1000] = {
+                  {options = {std = "max"}, line = 1000, column = 1},
+                  {options = {std = "another_bad_std"}, line = 1000, column = 20}
+               }
+            },
+            line_lengths = {}
+         }
+      }, {
+            {
+               std = "max",
+               inline = false
+            }
+      }))
+   end)
+
+   it("adds line length warnings", function()
+      assert.same({
+         {
+            {code = "631", line = 2, column = 1, end_column = 121, max_length = 120},
+            {code = "631", line = 5, column = 1, end_column = 21, max_length = 20}
+         }
+      }, filter_full({
+         {
+            events = {
+               {options = {max_line_length = 20}, line = 3, column = 1},
+               {options = {max_line_length = false}, line = 6, column = 1}
+            },
+            per_line_options = {},
+            line_lengths = {120, 121, 15, 20, 21, 15, 200}
+         }
+      }, {}))
    end)
 end)

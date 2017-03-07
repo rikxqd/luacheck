@@ -67,6 +67,7 @@ describe("luacheck", function()
             {
                code = "111",
                name = "embrace",
+               indexing = {"embrace"},
                top = true
             },
             {
@@ -75,7 +76,8 @@ describe("luacheck", function()
             },
             {
                code = "113",
-               name = "hepler"
+               name = "hepler",
+               indexing = {"hepler"}
             }
          },
          {
@@ -101,6 +103,7 @@ describe("luacheck", function()
             {
                code = "111",
                name = "embrace",
+               indexing = {"embrace"},
                top = true
             },
             {
@@ -109,7 +112,8 @@ describe("luacheck", function()
             },
             {
                code = "113",
-               name = "hepler"
+               name = "hepler",
+               indexing = {"hepler"}
             }
          },
          {
@@ -137,11 +141,13 @@ describe("luacheck", function()
             {
                code = "111",
                name = "embrace",
+               indexing = {"embrace"},
                top = true
             },
             {
                code = "113",
-               name = "hepler"
+               name = "hepler",
+               indexing = {"hepler"}
             }
          },
          {
@@ -199,7 +205,8 @@ describe("check_strings", function()
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             }
          },
          {
@@ -233,7 +240,7 @@ describe("check_strings", function()
          {
             {
                code = "521",
-               name = "foo",
+               label = "foo",
                line = 1,
                column = 1,
                end_column = 6
@@ -401,7 +408,8 @@ return f --[=[
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             }
          },
          {
@@ -425,7 +433,7 @@ describe("get_report", function()
    end)
 
    it("returns a table with single error event on syntax error", function()
-      local report = strip_locations({luacheck.get_report("return return")})[1]
+      local report = strip_locations({luacheck.get_report("return return").events})[1]
       assert.same({code = "011", msg = "expected expression near 'return'"}, report[1])
    end)
 end)
@@ -450,14 +458,16 @@ describe("process_reports", function()
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             }
          },
          {},
          warnings = 1,
          errors = 0,
          fatals = 0
-      }, strip_locations(luacheck.process_reports({luacheck.get_report("return foo"), luacheck.get_report("return math")})))
+      }, strip_locations(luacheck.process_reports(
+         {luacheck.get_report("return foo"), luacheck.get_report("return math")})))
    end)
 
    it("uses options", function()
@@ -465,19 +475,22 @@ describe("process_reports", function()
          {
             {
                code = "113",
-               name = "foo"
+               name = "foo",
+               indexing = {"foo"}
             }
          },
          {
             {
                code = "113",
-               name = "math"
+               name = "math",
+               indexing = {"math", "floor"}
             }
          },
          warnings = 2,
          errors = 0,
          fatals = 0
-      }, strip_locations(luacheck.process_reports({luacheck.get_report("return foo"), luacheck.get_report("return math")}, {
+      }, strip_locations(luacheck.process_reports(
+         {luacheck.get_report("return foo"), luacheck.get_report("return math.floor")}, {
          std = "none"
       })))
    end)
@@ -494,16 +507,38 @@ describe("get_message", function()
          code = "212",
          name = "bar"
       }))
+
       assert.equal("shadowing definition of loop variable 'foo' on line 1", luacheck.get_message({
          code = "423",
          name = "foo",
          line = 2,
          prev_line = 1
       }))
+
+      assert.equal("unused label 'fail'", luacheck.get_message({
+         code = "521",
+         name = "unrelated",
+         label = "fail"
+      }))
+
+      assert.equal("value assigned to field 'actual' is unused", luacheck.get_message({
+         code = "314",
+         name = "unrelated",
+         field = "actual"
+      }))
+
+      assert.equal("value assigned to index '42' is unused", luacheck.get_message({
+         code = "314",
+         name = "11037",
+         field = "42",
+         index = true
+      }))
+
       assert.equal("message goes here", luacheck.get_message({
          code = "011",
          msg = "message goes here"
       }))
+
       assert.equal("unexpected character near '%'", luacheck.get_message({
          code = "011",
          msg = "unexpected character near '%'"
